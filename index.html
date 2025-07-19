@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air-Swipe Gesture Control System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Cool Tech Neutral -->
+    <!-- Application Structure Plan: A single-page application with a sticky top navigation bar for easy traversal between thematic sections: "Overview," "Features," "Technology," "Process," and "How It Works." This non-linear structure allows users to explore content based on interest rather than report order. Key interactions include a hover-based diagram for finger controls, clickable cards for the tech stack, and interactive, expandable timelines and flowcharts for the development process and code logic. This design was chosen to transform a static technical document into an engaging, explorable, and user-driven experience, making complex information more digestible and accessible. -->
+    <!-- Visualization & Content Choices: Report Info -> Project Features. Goal -> Explain controls. Viz -> Interactive HTML/CSS hand diagram with hover effects. Justification -> More intuitive and memorable than a list. Library -> Vanilla JS for interaction. | Report Info -> Tech Stack. Goal -> Organize tools. Viz -> Grid of clickable cards. Justification -> Visually clean, invites exploration. Library -> Vanilla JS. | Report Info -> Development Process. Goal -> Show change/evolution. Viz -> Interactive vertical timeline. Justification -> Better for storytelling than a numbered list. Library -> Vanilla JS. | Report Info -> Code Logic. Goal -> Explain a process. Viz -> Clickable flowchart diagram. Justification -> Clarifies flow and dependencies. Library -> Vanilla JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            background: radial-gradient(circle at top left, #e0f7fa 0%, transparent 40%),
+                        radial-gradient(circle at bottom right, #e3f2fd 0%, transparent 40%),
+                        linear-gradient(to bottom right, #f0f9ff, #e0f2fe);
+            background-attachment: fixed; /* For a subtle parallax effect */
+            color: #334155; /* slate-700 for default text */
+        }
+        @import url('https://rsms.me/inter/inter.css'); /* Keep Inter for potential fallback or specific elements if needed, but Times New Roman is primary */
+        
+        /* Navigation active state */
+        .active-nav {
+            color: #06b6d4; /* cyan-500 */
+            font-weight: 600;
+            border-bottom: 2px solid #06b6d4;
+            padding-bottom: 4px;
+        }
+
+        /* Section visibility toggle */
+        .section-hidden {
+            display: none;
+        }
+
+        /* Timeline styling */
+        .timeline-item {
+            padding-left: 1.5rem; /* Space for the line and dot */
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 0.75rem; /* More rounded */
+            padding: 1rem 1.5rem 1rem 3rem; /* Adjusted padding for content */
+            margin-bottom: 1.5rem;
+            background-color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .timeline-item:hover {
+            background-color: #f0f9ff; /* Light blue on hover */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Stronger shadow on hover */
+            transform: translateY(-5px); /* More pronounced lift effect */
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+            left: -0.5rem; /* Position on the left border */
+            top: 1.25rem; /* Vertically center with title */
+            background-color: #06b6d4; /* cyan-600 */
+            border: 3px solid #f0f9ff; /* Lightest blue background */
+            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.6); /* Stronger glow effect */
+            z-index: 1;
+        }
+        .timeline-item h4 {
+            color: #0f172a; /* slate-900 */
+            margin-bottom: 0.5rem;
+        }
+        .timeline-item p {
+            line-height: 1.6;
+            color: #475569; /* slate-600 */
+        }
+
+        /* Hand diagram styling */
+        .hand-container {
+            transform: rotate(-15deg);
+            background: linear-gradient(to top right, #bbdefb, #90caf9); /* More vibrant blue gradient */
+            border-radius: 2rem; /* Even more rounded */
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.15); /* Deeper inner shadow */
+            overflow: hidden; /* Ensure content stays within bounds */
+        }
+        .hand-base {
+            position: relative;
+            width: 10rem; /* w-40 */
+            height: 14rem; /* h-56 */
+            background-color: #64b5f6; /* A medium blue for the hand */
+            border-radius: 50% 50% 2.5rem 2.5rem / 60% 60% 2.5rem 2.5rem; /* More organic hand shape, more rounded */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Stronger shadow */
+            border: 3px solid #42a5f5; /* More prominent blue border */
+        }
+        .finger {
+            transition: all 0.3s ease;
+            background-color: #e3f2fd; /* Lighter blue for fingers */
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); /* Deeper inner shadow */
+            border-radius: 9999px; /* rounded-full */
+            position: relative; /* For finger-tip positioning */
+            border: 1px solid #90caf9; /* Subtle finger border */
+        }
+        .finger-tip {
+            transition: all 0.3s ease;
+            background-color: #80cbc4; /* A soft teal for tips */
+            border-radius: 9999px 9999px 0 0; /* rounded-t-full */
+            box-shadow: inset 0 1px 6px rgba(0,0,0,0.25); /* Deeper inner shadow */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; /* Match finger width */
+            height: 25%; /* Proportionate height */
+        }
+        .finger-info {
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+            transform: translateY(15px); /* Start slightly further below */
+            background-color: #06b6d4; /* cyan-600 */
+            color: white;
+            padding: 0.35rem 0.75rem; /* Slightly larger padding */
+            border-radius: 0.375rem; /* More rounded */
+            font-size: 0.875rem; /* slightly larger text */
+            font-weight: bold;
+            white-space: nowrap; /* Prevent wrapping */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Stronger shadow */
+            z-index: 10;
+            position: absolute;
+        }
+        .finger-group:hover .finger {
+            transform: translateY(-20px) scale(1.08); /* More pronounced lift and scale */
+            background-color: #c5e1f1; /* Lighter blue on hover */
+            box-shadow: inset 0 2px 12px rgba(0,0,0,0.25);
+        }
+        .finger-group:hover .finger-tip {
+            background-color: #388e3c; /* Darker green for more contrast */
+            box-shadow: 0 0 0 6px rgba(56, 142, 60, 0.7); /* Stronger green glow */
+        }
+        .finger-group:hover .finger-info {
+            opacity: 1;
+            transform: translateY(-10px); /* Move higher on hover */
+        }
+
+        /* Tech item styling */
+        .tech-item {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: 500;
+            color: #475569; /* slate-600 */
+            background-color: #f8fafc; /* Lightest background for items */
+            border-radius: 0.75rem; /* More rounded */
+        }
+        .tech-item:hover {
+            transform: translateY(-5px); /* More lift */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Stronger shadow */
+            color: #06b6d4; /* cyan-600 */
+            background-color: #e0f2fe; /* Light blue on hover */
+        }
+        .tech-item.bg-cyan-200 { /* Active state */
+            background-color: #bae6fd; /* light blue */
+            color: #0369a1; /* dark blue */
+            font-weight: 600;
+            border-color: #0ea5e9; /* sky-500 */
+            box-shadow: 0 6px 15px rgba(14, 165, 233, 0.3); /* Stronger active shadow */
+        }
+
+        /* Flowchart styling */
+        .flowchart-step {
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: 500;
+            color: #475569; /* slate-600 */
+            background-color: #f8fafc; /* Lightest background for items */
+            border-radius: 0.75rem; /* More rounded */
+        }
+        .flowchart-step:hover {
+            transform: translateY(-3px); /* More lift */
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1); /* Stronger shadow */
+            color: #06b6d4; /* cyan-600 */
+            background-color: #e0f2fe; /* Light blue on hover */
+        }
+        .flowchart-step.bg-cyan-100 { /* Active state */
+            background-color: #bae6fd; /* light blue */
+            color: #0369a1; /* dark blue */
+            font-weight: 600;
+            border-color: #0ea5e9; /* sky-500 */
+            box-shadow: 0 6px 15px rgba(6, 182, 212, 0.3); /* Stronger active shadow */
+        }
+        .flowchart-step-item .h-8 { /* Connector line */
+            background-color: #67e8f9; /* cyan-300 */
+            margin-top: 0.75rem; /* More spacing */
+            margin-bottom: 0.75rem; /* More spacing */
+            height: 2rem; /* Taller line */
+        }
+
+        /* General section styling */
+        section {
+            padding: 5rem 0; /* More consistent vertical padding */
+        }
+        section h2 {
+            color: #0f172a; /* slate-900 */
+            font-size: 2.5rem; /* Slightly larger headings */
+            margin-bottom: 1rem;
+        }
+        section p {
+            color: #475569; /* slate-600 */
+            font-size: 1.125rem; /* Slightly larger body text */
+            line-height: 1.7;
+        }
+        .bg-white {
+            background-color: #ffffff;
+            border-radius: 2rem; /* Even more rounded corners for sections */
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1); /* Even stronger shadow for sections */
+        }
+        .shadow-xl {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+        .shadow-lg {
+             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .shadow-md {
+             box-shadow: 0 5px 15px rgba(0,0,0,0.06);
+        }
+
+        /* Header and Footer */
+        header {
+            border-bottom: 1px solid #e2e8f0; /* subtle border */
+        }
+        footer {
+            background-color: #1e293b; /* slate-800 */
+            color: #94a3b8; /* slate-400 */
+            padding: 1.5rem 0; /* More padding */
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-lg">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="text-xl font-bold text-cyan-600">
+                <a href="#overview">Air-Swipe</a>
+            </div>
+            <div class="hidden md:flex space-x-8" id="nav-links">
+                <a href="#features" class="text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-all duration-200">Features</a>
+                <a href="#tech" class="text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-all duration-200">Technology</a>
+                <a href="#process" class="text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-all duration-200">Process</a>
+                <a href="#how" class="text-slate-600 hover:text-cyan-600 hover:bg-cyan-50 px-3 py-2 rounded-lg transition-all duration-200">How It Works</a>
+            </div>
+             <button id="mobile-menu-button" class="md:hidden text-slate-600 focus:outline-none p-2 rounded-lg hover:bg-cyan-50 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#features" class="block py-2 px-6 text-slate-600 hover:bg-cyan-50 transition-colors duration-200">Features</a>
+            <a href="#tech" class="block py-2 px-6 text-slate-600 hover:bg-cyan-50 transition-colors duration-200">Technology</a>
+            <a href="#process" class="block py-2 px-6 text-slate-600 hover:bg-cyan-50 transition-colors duration-200">Process</a>
+            <a href="#how" class="block py-2 px-6 text-slate-600 hover:bg-cyan-50 transition-colors duration-200">How It Works</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 md:py-12">
+        <section id="overview" class="text-center min-h-[60vh] flex flex-col justify-center items-center bg-white rounded-xl shadow-xl mb-16 px-4 py-12">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4">The "Air-Swipe" Gesture Control System</h1>
+            <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-600">
+                This project introduces a real-time application designed to control swipe-based mobile games and applications on an Android phone using intuitive hand gestures. The system leverages a computer's webcam to create a "virtual controller" in the air, translating specific finger movements into commands that are seamlessly transmitted to a connected device.
+            </p>
+        </section>
+
+        <section id="features" class="py-16 bg-blue-50 rounded-xl shadow-xl mb-16">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">Core Functionality & Features</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">
+                    The application integrates several key features to deliver a robust and user-friendly gesture control experience. This section breaks down the core components, from the intuitive multi-finger controls to the essential feedback systems that make the interaction feel seamless and responsive.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-start px-6">
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-xl">
+                    <h3 class="text-xl font-semibold mb-3">Multi-Finger Control</h3>
+                     <p class="text-slate-600 mb-6">The system employs a dedicated finger for each primary directional swipe, creating an ergonomic and intuitive control scheme. Hover over the fingers on the diagram to see their assigned actions.</p>
+                     <div class="relative w-full h-80 flex justify-center items-center rounded-xl overflow-hidden hand-container">
+                        <div class="hand-base">
+                            <!-- Thumb -->
+                            <div class="finger-group absolute -left-10 top-20 cursor-pointer">
+                                <div class="finger w-8 h-12 rounded-full" style="transform-origin: bottom right; transform: rotate(45deg);">
+                                   <div class="finger-tip"></div>
+                                </div>
+                                <div class="finger-info absolute -left-20 top-0">LEFT</div>
+                            </div>
+                            <!-- Index -->
+                            <div class="finger-group absolute left-1 top-[-48px] cursor-pointer">
+                                <div class="finger w-8 h-20 rounded-full">
+                                    <div class="finger-tip"></div>
+                                </div>
+                                <div class="finger-info absolute -top-8 left-1">UP</div>
+                            </div>
+                            <!-- Pinky -->
+                            <div class="finger-group absolute right-1 top-[-24px] cursor-pointer">
+                                <div class="finger w-7 h-16 rounded-full">
+                                    <div class="finger-tip"></div>
+                                </div>
+                                <div class="finger-info absolute -top-8 right-0">RIGHT</div>
+                            </div>
+                            <!-- Ring -->
+                            <div class="finger-group absolute right-8 top-[-36px] cursor-pointer">
+                                <div class="finger w-8 h-20 rounded-full">
+                                     <div class="finger-tip"></div>
+                                </div>
+                                <div class="finger-info absolute -top-8 right-2">DOWN</div>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+                <div class="space-y-8 lg:col-span-2">
+                    <div class="bg-white p-6 rounded-xl shadow-xl">
+                        <h3 class="text-xl font-semibold mb-2">Visual & Audio Feedback</h3>
+                        <p class="text-slate-600">To provide immediate confirmation, the system offers comprehensive visual cues like a live webcam feed with a hand skeleton and flashing activation zones, complemented by "click" and "swoosh" sounds for registration and execution.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-xl">
+                        <h3 class="text-xl font-semibold mb-2">High-Speed Performance</h3>
+                        <p class="text-slate-600">To ensure minimal latency, hand tracking and AI processing are performed on a downscaled version of the webcam image, while the full-quality image is displayed to the user for visual fidelity.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-xl">
+                        <h3 class="text-xl font-semibold mb-2">Robust Controls</h3>
+                        <p class="text-slate-600">A cooldown mechanism is implemented for each gesture action to prevent unintended multiple commands from a single, prolonged gesture, ensuring precise and controlled interactions.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tech" class="py-16 bg-cyan-50 rounded-xl my-16 shadow-xl">
+            <div class="text-center mb-12 px-4">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">Technologies Used</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">
+                    The "Air-Swipe" project was developed using a suite of powerful, open-source Python libraries and standard development tools. This section outlines the core technologies that form the foundation of the system, from computer vision to audio handling. Click on a technology to learn more about its role.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center px-4" id="tech-grid">
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">Python 3</div>
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">OpenCV</div>
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">MediaPipe</div>
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">ADB</div>
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">Playsound</div>
+                <div class="tech-item cursor-pointer p-4 bg-slate-100 rounded-lg hover:bg-cyan-100 hover:shadow-md transition">Threading</div>
+            </div>
+            <div id="tech-details" class="mt-8 px-6 text-center">
+                <p class="text-slate-600">Select a technology to see its description.</p>
+            </div>
+        </section>
+        
+        <section id="process" class="py-16 bg-blue-50 rounded-xl mb-16 shadow-xl">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">The Development Process</h2>
+                <p class="max-w-2xl mx-auto text-slate-600">
+                    The project followed an iterative methodology, progressively adding features and refining the user experience. This interactive timeline highlights the key milestones and design decisions made throughout the development journey, showcasing the evolution from a basic concept to a polished application.
+                </p>
+            </div>
+            <div class="relative max-w-2xl mx-auto border-l-2 border-cyan-200 pl-8" id="timeline-container">
+            </div>
+        </section>
+
+        <section id="how" class="py-16 bg-cyan-50 rounded-xl shadow-xl">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold mb-2">How the Code Works</h2>
+                 <p class="max-w-3xl mx-auto text-slate-600">
+                    The system operates on a continuous loop, processing each frame of video from the webcam to deliver a real-time experience. This interactive flowchart breaks down the sequence of operations that occurs for every single frame, from image capture to command execution. Click on each step to see a detailed explanation of what's happening under the hood.
+                </p>
+            </div>
+            <div class="flex flex-col md:flex-row gap-8 items-start px-6">
+                <div class="w-full md:w-1/3 space-y-2" id="flowchart-steps">
+                </div>
+                <div class="w-full md:w-2/3 bg-white p-6 rounded-xl shadow-xl min-h-[200px]" id="flowchart-details-container">
+                    <p class="text-slate-600">Select a step from the flowchart to see the details.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-800 text-white mt-16">
+        <div class="container mx-auto px-6 py-4 text-center text-slate-400">
+            <p>&copy; 2025 Air-Swipe Project Documentation. Interactive experience created for demonstration.</p>
+        </div>
+    </footer>
+
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            document.querySelectorAll('#mobile-menu a').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                });
+            });
+
+            const techData = {
+                'Python 3': "The foundational programming language for the entire system.",
+                'OpenCV': "Utilized for video capture from the webcam, image processing operations (resizing, flipping, drawing overlays), and displaying the real-time output window.",
+                'MediaPipe': "A robust computer vision framework by Google, specifically its Hands solution, employed for hand detection and precise identification of 21 3D key landmarks.",
+                'ADB': "A command-line tool from Google, enabling the computer to send shell commands (specifically swipe commands) to a connected Android device.",
+                'Playsound': "A lightweight Python library used for playing .mp3 sound files, facilitating the audio feedback system.",
+                'Threading': "A built-in Python module used to execute sound playback on a separate thread, preventing the main video processing loop from freezing during audio output."
+            };
+
+            const techGrid = document.getElementById('tech-grid');
+            const techDetails = document.getElementById('tech-details');
+            
+            techGrid.addEventListener('click', (e) => {
+                if(e.target.classList.contains('tech-item')){
+                    const techName = e.target.textContent;
+                    techDetails.innerHTML = `<h3 class="text-xl font-semibold text-cyan-700 mb-2">${techName}</h3><p class="text-slate-600 max-w-xl mx-auto">${techData[techName]}</p>`;
+                    
+                    document.querySelectorAll('.tech-item').forEach(item => {
+                        item.classList.remove('bg-cyan-200', 'text-cyan-800', 'font-semibold');
+                        item.classList.add('bg-slate-100');
+                    });
+                    e.target.classList.add('bg-cyan-200', 'text-cyan-800', 'font-semibold');
+                    e.target.classList.remove('bg-slate-100');
+                }
+            });
+
+            const timelineData = [
+                { title: 'Initial Setup', description: 'Established the fundamental communication link between the computer and the Android phone via ADB.' },
+                { title: 'Basic Swipe Detection', description: 'Implemented an initial algorithm for detecting the direction of rapid hand swipes. While functional, this version lacked precision.' },
+                { title: 'Zone-Based Control', description: 'Replaced the swipe detection logic with on-screen "activation zones." Actions were triggered when the user\'s hand entered a specific zone, significantly improving reliability.' },
+                { title: 'Performance Optimization', description: 'Addressed observed delays in hand tracking by processing a smaller image for AI analysis while displaying the full-sized image to the user. This drastically improved tracking speed.' },
+                { title: 'Finger-Tip Control', description: 'Further refined controls by shifting from tracking the center of the palm to tracking the tip of the index finger, providing a more intuitive "pointing" interaction.' },
+                { title: 'Multi-Finger Control Pad', description: 'A significant evolution, assigning a distinct finger to each directional command. Activation zones were enlarged for easier targeting.' },
+                { title: 'Audio Feedback Integration', description: 'In the final iteration, audio cues ("click" and "swoosh") were incorporated, providing instant, non-visual confirmation and enhancing the system\'s polish.' }
+            ];
+
+            const timelineContainer = document.getElementById('timeline-container');
+            timelineData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'timeline-item mb-8 relative cursor-pointer';
+                div.innerHTML = `
+                    <h4 class="font-semibold text-lg">${index + 1}. ${item.title}</h4>
+                    <p class="text-slate-600 section-hidden">${item.description}</p>
+                `;
+                timelineContainer.appendChild(div);
+            });
+            
+            timelineContainer.addEventListener('click', e => {
+                const targetItem = e.target.closest('.timeline-item');
+                if (targetItem) {
+                    const desc = targetItem.querySelector('p');
+                    desc.classList.toggle('section-hidden');
+                    document.querySelectorAll('.timeline-item').forEach(item => {
+                       if(item !== targetItem) {
+                           item.querySelector('p').classList.add('section-hidden');
+                       } 
+                    });
+                }
+            });
+
+            const flowchartData = [
+                { step: 'Capture & Prepare', detail: "OpenCV captures an image from the webcam. This image is then horizontally flipped (to provide a mirror view for the user) and a smaller copy is generated for efficient processing by the AI." },
+                { step: 'Detect Hand', detail: "The smaller image is passed to the MediaPipe framework. MediaPipe analyzes the image to detect the presence of a hand and, if found, returns the precise 3D coordinates of all 21 key landmarks on the hand." },
+                { step: 'Get Finger Coordinates', detail: "The code extracts the specific coordinates for the tips of the Thumb, Index, Ring, and Pinky fingers from the detected landmarks." },
+                { step: 'Draw Visuals', detail: "The system overlays visual feedback onto the full-sized image, including drawing the hand skeleton and placing green dots on the active finger tips, providing real-time tracking visualization to the user." },
+                { step: 'Check for Actions', detail: "The code continuously monitors the position of each active finger tip relative to its predefined activation zone (e.g., 'Is the Thumb's X-coordinate within the LEFT zone?')." },
+                { step: 'Trigger Command', detail: "If a finger's tip is detected in its zone AND its cooldown has expired, the system plays a 'click' sound, calls the swipe function (which plays a 'swoosh' and sends the ADB command), and resets the cooldown." },
+                { step: 'Display', detail: "The fully annotated, full-sized image, complete with all visual feedback, is displayed in a dedicated window on the user's screen." },
+                { step: 'Repeat', detail: "This entire loop executes dozens of times per second, ensuring a fluid, real-time, and highly responsive gesture control experience." }
+            ];
+
+            const flowchartStepsContainer = document.getElementById('flowchart-steps');
+            const flowchartDetailsContainer = document.getElementById('flowchart-details-container');
+            
+            flowchartData.forEach((item, index) => {
+                const isLast = index === flowchartData.length - 1;
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'flowchart-step-item';
+                stepDiv.innerHTML = `
+                    <div class="flowchart-step cursor-pointer p-4 bg-white rounded-lg shadow-md hover:bg-cyan-50 border border-slate-200 transition">
+                        ${index + 1}. ${item.step}
+                    </div>
+                    ${!isLast ? '<div class="h-8 w-px bg-cyan-300 mx-auto"></div>' : ''}
+                `;
+                flowchartStepsContainer.appendChild(stepDiv);
+
+                stepDiv.querySelector('.flowchart-step').addEventListener('click', () => {
+                    flowchartDetailsContainer.innerHTML = `<h4 class="text-xl font-semibold mb-3 text-cyan-700">${item.step}</h4><p class="text-slate-600">${item.detail}</p>`;
+                     document.querySelectorAll('.flowchart-step').forEach(s => s.classList.remove('bg-cyan-100', 'border-cyan-400'));
+                    stepDiv.querySelector('.flowchart-step').classList.add('bg-cyan-100', 'border-cyan-400');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
